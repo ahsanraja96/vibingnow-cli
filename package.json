@@ -1,6 +1,6 @@
 {
   "name": "vibingnow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "Put your Claude Code and Codex sessions on the VibingNow live globe. Sends token counts, active minutes and mood signals only, never prompts or code.",
   "keywords": [

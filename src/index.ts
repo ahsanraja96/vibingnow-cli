@@ -11,7 +11,7 @@ import { BRAND } from './brand.js';
 import { CodexConfigError, codexHome, codexHookState, defaultCodexConfig, installCodexHook, uninstallCodexHook } from './codex-config.js';
 import { loadState, saveState, seedCodex } from './hook.js';
 import { installSync, removeSync, syncInstalled, syncLabel, type SyncKind } from './schedule.js';
-import { SettingsError, checkSettings, hasVibePulseHook, hookCommand, hookNode, installHook, parseSettings, uninstallHook } from './settings.js';
+import { SettingsError, checkSettings, hasVibePulseHook, hookCommand, hookNode, installHook, parseSettings, removeBackups, uninstallHook } from './settings.js';
 
 interface Config {
   server: string;
@@ -350,6 +350,9 @@ async function disconnect(): Promise<number> {
   } catch {
     console.warn(`Warning: could not reach ${c.server} to revoke this device. Revoke it on the site if needed.`);
   }
+  // The backups connect made are copies of your settings, which can hold API keys: don't leave them behind.
+  const copies = removeBackups(c.settingsPath) + (c.codexConfigPath ? removeBackups(c.codexConfigPath) : 0);
+  if (copies) console.log(`Deleted ${copies} backup ${copies === 1 ? 'copy' : 'copies'} of your settings.`);
   rmSync(configPath(), { force: true });
   rmSync(hookPath(), { force: true });
   rmSync(join(home(), 'state.json'), { force: true });

@@ -5,8 +5,10 @@ The open source command line tool behind [vibingnow.online](https://vibingnow.on
 It has no runtime dependencies. Everything it does on your computer is in this repo.
 
 ```
-npx vibingnow
+npx vibingnow@latest
 ```
+
+Pin a version if you prefer, for example `npx vibingnow@0.3.1`. Each release is tagged here with the same number.
 
 Your browser opens, you click **Approve**, and you're on the map.
 
@@ -18,6 +20,7 @@ Your browser opens, you click **Approve**, and you're on the map.
 - **Codex:** if installed, adds one `notify` line to `~/.codex/config.toml`.
 - **A once-a-minute job:** Task Scheduler on Windows, a LaunchAgent on macOS, a systemd user timer or crontab line on Linux.
 - **Its own files:** a config file holding this computer's token, and a state file.
+- **One backup of each settings file it edits**, next to the original (for example `settings.json.vibingnow-backup-<date>`). Settings can hold API keys, so the backup is private to your user, there is only ever one, and `disconnect` deletes it.
 
 ### What it reads
 
@@ -61,7 +64,7 @@ npx vibingnow test        # send a test ping
 npx vibingnow disconnect  # remove the hooks and the job, and revoke this computer
 ```
 
-`disconnect` puts things back as they were.
+`disconnect` puts things back as they were, and deletes the backups and its own files.
 
 ## Build from source
 

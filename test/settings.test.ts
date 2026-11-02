@@ -2,7 +2,7 @@ import { chmodSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileS
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { addVibePulseHook, hookCommand, hookNode, installHook, removeVibePulseHook, uninstallHook, SettingsError, hasVibePulseHook } from '../src/settings.js';
+import { addVibePulseHook, hookCommand, hookNode, installHook, removeBackups, removeVibePulseHook, uninstallHook, SettingsError, hasVibePulseHook } from '../src/settings.js';
 
 const hooks: Record<string, unknown[]> = Object.fromEntries(
   ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'SubagentStop', 'SessionEnd'].map((ev) => [
@@ -79,11 +79,23 @@ describe('settings merge', () => {
     expect(text.endsWith('}\n')).toBe(true);
     expect(text).toContain('\n  "hooks": {');
     expect(text.split(JSON.stringify(CMD)).length - 1).toBe(2); // Stop and PostToolUse
-    const u = uninstallHook(file, CMD, false, new Date('2026-10-15T10:11:14.000Z'));
+    const u = uninstallHook(file, CMD, false);
     expect(u.removed).toBe(true);
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual(REAL);
     expect(readFileSync(file, 'utf8')).toBe(original);
-    expect(readdirSync(dir).filter((f) => f.includes('vibingnow-backup')).length).toBe(3);
+    // One backup at a time, and none left once disconnect clears them (they can hold API keys).
+    expect(readdirSync(dir).filter((f) => f.includes('vibingnow-backup')).length).toBe(1);
+    writeFileSync(join(dir, 'other.json.vibingnow-backup-x'), '{}');
+    expect(removeBackups(file)).toBe(1);
+    expect(readdirSync(dir).filter((f) => f.includes('vibingnow-backup'))).toEqual(['other.json.vibingnow-backup-x']);
+  });
+
+  it.skipIf(process.platform === 'win32')('keeps the backup private', () => {
+    const dir = tmp();
+    const file = join(dir, 'settings.json');
+    writeFileSync(file, '{"env":{"KEY":"secret"}}\n', { mode: 0o644 });
+    const r = installHook(file, CMD);
+    expect(statSync(r.backup!).mode & 0o777).toBe(0o600);
   });
 
   it('creates the file when missing and removes it again on disconnect', () => {

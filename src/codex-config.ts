@@ -2,10 +2,10 @@
 // `node hook.mjs codex` after each agent turn. Edited as plain text so the rest of the file is untouched:
 // the line goes in the top-level section (before the first [table]) and is marked so disconnect can
 // remove exactly it. If Codex already has a notify program of its own, we leave it alone and say so.
-import { chmodSync, copyFileSync, existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { backupPath } from './settings.js';
+import { backupFile } from './settings.js';
 
 export const MARK = '# added by vibingnow';
 const NOTIFY = /^\s*notify\s*=/;
@@ -78,10 +78,7 @@ export function installCodexHook(file: string, hookPath: string, now = new Date(
   const before = exists ? readFileSync(file, 'utf8') : '';
   const after = addCodexHook(before, hookPath);
   let backup: string | null = null;
-  if (exists) {
-    backup = backupPath(file, now);
-    copyFileSync(file, backup);
-  }
+  if (exists) backup = backupFile(file, now);
   writeAtomic(file, after);
   return { backup, created: !exists };
 }

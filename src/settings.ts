@@ -1,6 +1,7 @@
 // Merge and unmerge the VibingNow hooks in Claude Code's settings.json. Never touches anything else.
 // Stop sends when a reply finishes; PostToolUse sends during long replies (the hook throttles it).
-import { chmodSync, copyFileSync, existsSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, readdirSync, readFileSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 
 type Json = Record<string, unknown>;
 
@@ -117,6 +118,38 @@ export function backupPath(file: string, now = new Date()): string {
   return `${file}.vibingnow-backup-${now.toISOString().replace(/:/g, '-')}`;
 }
 
+/**
+ * Copies `file` to a private backup (settings can hold API keys), replacing any earlier backup of ours, so at
+ * most one copy exists. Disconnect removes it with removeBackups.
+ */
+export function backupFile(file: string, now = new Date()): string {
+  removeBackups(file);
+  const backup = backupPath(file, now);
+  copyFileSync(file, backup);
+  try {
+    chmodSync(backup, 0o600);
+  } catch {
+    /* Windows: the copy keeps the original's access rules */
+  }
+  return backup;
+}
+
+/** Deletes every backup connect made of `file`. Returns how many were removed. */
+export function removeBackups(file: string): number {
+  const prefix = `${basename(file)}.vibingnow-backup-`;
+  let n = 0;
+  try {
+    for (const name of readdirSync(dirname(file))) {
+      if (!name.startsWith(prefix)) continue;
+      rmSync(join(dirname(file), name), { force: true });
+      n++;
+    }
+  } catch {
+    /* folder gone */
+  }
+  return n;
+}
+
 export class SettingsError extends Error {}
 
 function readSettings(file: string): Json | null {
@@ -148,10 +181,7 @@ export interface InstallResult {
 export function installHook(file: string, command: string, now = new Date()): InstallResult {
   const current = readSettings(file);
   let backup: string | null = null;
-  if (current) {
-    backup = backupPath(file, now);
-    copyFileSync(file, backup);
-  }
+  if (current) backup = backupFile(file, now);
   writeAtomic(file, formatSettings(addVibePulseHook(current ?? {}, command)));
   return { backup, created: current === null };
 }
@@ -163,7 +193,7 @@ export interface UninstallResult {
 }
 
 /** `createdByUs`: connect created the file, so an otherwise empty result removes it again. */
-export function uninstallHook(file: string, command: string | undefined, createdByUs: boolean, now = new Date()): UninstallResult {
+export function uninstallHook(file: string, command: string | undefined, createdByUs: boolean): UninstallResult {
   const current = readSettings(file);
   if (!current || !hasVibePulseHook(current, command)) return { removed: false, backup: null, deletedFile: false };
   const next = removeVibePulseHook(current, command);
@@ -171,8 +201,6 @@ export function uninstallHook(file: string, command: string | undefined, created
     unlinkSync(file);
     return { removed: true, backup: null, deletedFile: true };
   }
-  const backup = backupPath(file, now);
-  copyFileSync(file, backup);
   writeAtomic(file, formatSettings(next));
-  return { removed: true, backup, deletedFile: false };
+  return { removed: true, backup: null, deletedFile: false };
 }
