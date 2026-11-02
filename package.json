@@ -1,0 +1,35 @@
+{
+  "name": "vibingnow",
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Put your Claude Code and Codex sessions on the VibingNow live globe. Sends token counts, active minutes and mood signals only, never prompts or code.",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "ai",
+    "vibe-coding",
+    "globe"
+  ],
+  "homepage": "https://vibingnow.online",
+  "license": "MIT",
+  "bin": {
+    "vibingnow": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahsanraja96/vibingnow-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ahsanraja96/vibingnow-cli/issues"
+  }
+}
